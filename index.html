@@ -640,15 +640,71 @@
             prevBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
             nextBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
             
-            // カウントダウン関連（変更なし）
-            addCountdownBtn.addEventListener('click', () => { /* ... */ });
-            cancelBtn.addEventListener('click', () => countdownDialog.classList.remove('active'));
-            saveBtn.addEventListener('click', () => {
-                // ... カウントダウンの保存ロジック (localStorageのまま)
-            });
-            countdownListEl.addEventListener('click', (e) => {
-                // ... カウントダウンの編集・削除ロジック (localStorageのまま)
-            });
+// --- イベントリスナー ---
+
+// ... (prevBtn, nextBtnのリスナーはそのままでOK) ...
+
+// ▼▼▼ カウントダウン関連のイベントリスナー（完全版） ▼▼▼
+addCountdownBtn.addEventListener('click', () => {
+    dialogTitleEl.textContent = 'カウントダウンを追加';
+    countdownNameInput.value = '';
+    countdownDateInput.value = '';
+    countdownColorInput.value = settings.theme_color;
+    editingIndex = null;
+    errorMessageEl.classList.add('hidden');
+    countdownDialog.classList.add('active');
+});
+
+cancelBtn.addEventListener('click', () => {
+    countdownDialog.classList.remove('active');
+});
+
+saveBtn.addEventListener('click', () => {
+    const name = countdownNameInput.value.trim();
+    const date = countdownDateInput.value;
+    const color = countdownColorInput.value;
+    if (name && date) {
+        if (editingIndex !== null) {
+            countdowns[editingIndex] = { name, date, color };
+        } else {
+            countdowns.push({ name, date, color });
+        }
+        // カウントダウンは今まで通り、ブラウザに保存します
+        localStorage.setItem('countdowns', JSON.stringify(countdowns));
+        updateCountdownList();
+        countdownDialog.classList.remove('active');
+    } else {
+        errorMessageEl.classList.remove('hidden');
+    }
+});
+
+countdownListEl.addEventListener('click', (e) => {
+    const itemEl = e.target.closest('.countdown-item');
+    if (!itemEl) return;
+    const index = parseInt(itemEl.dataset.index, 10);
+    if (isNaN(index)) return;
+
+    const deleteBtn = e.target.closest('[data-action="delete"]');
+    if (deleteBtn) {
+        e.stopPropagation(); 
+        countdowns.splice(index, 1);
+        localStorage.setItem('countdowns', JSON.stringify(countdowns));
+        updateCountdownList();
+    } else {
+        dialogTitleEl.textContent = 'カウントダウンを編集';
+        const item = countdowns[index];
+        countdownNameInput.value = item.name;
+        countdownDateInput.value = item.date;
+        countdownColorInput.value = item.color || settings.theme_color;
+        editingIndex = index;
+        errorMessageEl.classList.add('hidden');
+        countdownDialog.classList.add('active');
+    }
+});
+// ▲▲▲ カウントダウン関連はここまで ▲▲▲
+
+
+// ... (設定関連、認証関連のリスナーはそのままでOK) ...
 
             // 設定関連（localStorageからupsertSettingsへの変更）
             closeSettingsBtn.addEventListener('click', () => settingsDialog.classList.remove('active'));
