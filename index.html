@@ -382,7 +382,6 @@
             </div>
         </div>
     </div>
-    <!-- ▲▲▲ 認証ダイアログ（ここまで） ▲▲▲ -->
 
     <!-- Supabaseライブラリを読み込む -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -391,7 +390,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             const SUPABASE_URL = 'https://rdnslbtratnzmsguwqbb.supabase.co/';
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkbnNsYnRyYXRuem1zZ3V3cWJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxNzI5ODAsImV4cCI6MjA3Mzc0ODk4MH0.1mue4C4lK0hAohaZinS0nhXe4bzCm9OsCrjjf_qvrgM'; 
-            const { createClient } = supabase;
             const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             // --- オリジナルのDOM要素 ---
