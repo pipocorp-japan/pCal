@@ -764,9 +764,7 @@ countdownListEl.addEventListener('click', (e) => {
             const handleOAuthSignIn = async (provider) => {
                 const { error } = await supabase.auth.signInWithOAuth({ 
                     provider: provider,
-                    options: {
-                        redirectTo: window.location.href
-                    }
+
                 });
                 if (error) {
                     authErrorMessage.textContent = `Error: ${error.message}`;
@@ -777,20 +775,33 @@ countdownListEl.addEventListener('click', (e) => {
             githubSignInBtn.addEventListener('click', () => handleOAuthSignIn('github'));
 
 
-            // --- メイン処理（認証状態の監視） ---
-            supabase.auth.onAuthStateChange(async (_event, session) => {
-                currentUser = session?.user;
-                updateAuthUI(currentUser);
+// --- メイン処理（認証状態の監視） ---
+// この関数が、ログイン/ログアウト/ページ読み込み時の全ての動作の起点となる
+supabase.auth.onAuthStateChange(async (event, session) => {
 
-                if (currentUser) {
-                    // ログイン時：DBから設定を読み込む
-                    await fetchSettings(currentUser);
-                } else {
-                    // ログアウト時：デフォルト設定に戻す
-                    settings = { ...defaultSettings };
-                    applySettings();
-                }
-            });
+    // GoogleやGitHubからのリダイレクト直後は、eventが'SIGNED_IN'になる
+    // このタイミングでセッション情報を確実に処理する
+    if (event === 'SIGNED_IN' && session) {
+        const user = session.user;
+        currentUser = user;
+        updateAuthUI(user);
+        await fetchSettings(user);
+    
+    // ユーザーがすでにログイン済みの状態でページを再読み込みした時
+    } else if (event === 'INITIAL_SESSION' && session) {
+        const user = session.user;
+        currentUser = user;
+        updateAuthUI(user);
+        await fetchSettings(user);
+
+    // ログアウトした時
+    } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        updateAuthUI(null);
+        settings = { ...defaultSettings };
+        applySettings();
+    }
+});
 
             // --- 初期描画 ---
             updateCountdownList(); // カウントダウンは常にローカルから読み込む
