@@ -780,14 +780,18 @@
                 updateAuthDialogUI();
             });
 
-            const handleOAuthSignIn = async (provider) => {
-                const { error } = await supabase.auth.signInWithOAuth({ provider: provider });
-                if (error) {
-                    authErrorMessage.textContent = `Error: ${error.message}`;
-                    authErrorMessage.classList.remove('hidden');
-                }
-            };
-            googleSignInBtn.addEventListener('click', () => handleOAuthSignIn('google'));
+const handleOAuthSignIn = async (provider) => {
+    const { error } = await supabase.auth.signInWithOAuth({ 
+        provider: provider,
+        options: {
+            redirectTo: 'https://pipocorp-japan.github.io/pCal' // ★★★ この行を追加！ ★★★
+        }
+    });
+    if (error) {
+        authErrorMessage.textContent = `Error: ${error.message}`;
+        authErrorMessage.classList.remove('hidden');
+    }
+};            googleSignInBtn.addEventListener('click', () => handleOAuthSignIn('google'));
             githubSignInBtn.addEventListener('click', () => handleOAuthSignIn('github'));
 
 
