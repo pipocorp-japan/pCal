@@ -433,14 +433,17 @@
             const authToggleLink = document.getElementById('authToggleLink');
             const closeAuthBtn = document.getElementById('closeAuthBtn');
             const authErrorMessage = document.getElementById('authErrorMessage');
+            // ★★★ 修正点1: 新しいDOM要素をここで取得 ★★★
+            const confirmPasswordContainer = document.getElementById('confirmPasswordContainer');
+            const authPasswordConfirmInput = document.getElementById('authPasswordConfirm');
             const googleSignInBtn = document.getElementById('googleSignInBtn');
             const githubSignInBtn = document.getElementById('githubSignInBtn');
 
 
             // --- グローバル変数 ---
             let currentDate = new Date();
-            let countdowns = []; // 【修正】初期読み込みは認証状態の確認後に実行
-            let editingItemIndex = null; // 編集中のアイテムのインデックスを保持
+            let countdowns = [];
+            let editingItemIndex = null;
             let currentUser = null;
             let isSignUpMode = false;
 
@@ -489,12 +492,23 @@
                 }
             };
             
+            // ★★★ 修正点2: この関数を丸ごと入れ替え ★★★
             const updateAuthDialogUI = () => {
                 authErrorMessage.classList.add('hidden');
                 authForm.reset();
                 authTitle.textContent = isSignUpMode ? '新規登録' : 'ログイン';
                 authSubmitBtn.textContent = isSignUpMode ? '登録する' : 'ログインする';
                 authToggleLink.textContent = isSignUpMode ? 'すでにアカウントをお持ちですか？ ログイン' : 'アカウントをお持ちでないですか？ 新規登録';
+                
+                // isSignUpModeがtrue（新規登録）なら確認欄を表示し、false（ログイン）なら隠す
+                confirmPasswordContainer.style.display = isSignUpMode ? 'block' : 'none';
+                
+                // 確認用の入力欄の required 属性を切り替える
+                if (isSignUpMode) {
+                    authPasswordConfirmInput.setAttribute('required', '');
+                } else {
+                    authPasswordConfirmInput.removeAttribute('required');
+                }
             };
 
             // --- 設定適用＆DB連携関数 ---
@@ -542,13 +556,11 @@
                 }
             }, 1000);
 
-            // --- 【新規】カウントダウンデータ取得関数 ---
-            // ログイン状態に応じて、DBまたはローカルストレージからデータを取得する
+            // --- カウントダウンデータ取得関数 ---
             const fetchCountdowns = async () => {
                 if (currentUser) {
-                    // ログイン中の場合：Supabaseから取得
                     const { data, error } = await supabase
-                        .from('countdowns') // Supabaseに 'countdowns' テーブルを作成してください
+                        .from('countdowns')
                         .select('*')
                         .eq('user_id', currentUser.id)
                         .order('date', { ascending: true });
@@ -560,7 +572,6 @@
                         countdowns = data;
                     }
                 } else {
-                    // 未ログインの場合：ローカルストレージから取得
                     countdowns = JSON.parse(localStorage.getItem('countdowns')) || [];
                 }
                 updateCountdownList();
@@ -572,13 +583,12 @@
                 countdownListEl.innerHTML = '';
                 if (countdowns.length === 0) {
                     countdownListEl.innerHTML = '<div class="text-gray-500 text-center" style="color:var(--text-color);">まだカウントダウン項目はありません。</div>';
-                    renderCalendar(); // カレンダーも更新
+                    renderCalendar();
                     return;
                 }
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                // 日付順にソート
                 countdowns.sort((a, b) => new Date(a.date) - new Date(b.date));
 
                 countdowns.forEach((item, index) => {
@@ -631,7 +641,7 @@
                     if (eventsOnDay.length > 0) {
                         const dotContainer = document.createElement('div');
                         dotContainer.className = 'absolute bottom-1 flex gap-1';
-                        eventsOnDay.slice(0, 5).forEach(event => { // 最大5つまでドットを表示
+                        eventsOnDay.slice(0, 5).forEach(event => {
                              const dot = document.createElement('div');
                              dot.className = 'w-1.5 h-1.5 rounded-full';
                              dot.style.backgroundColor = event.color || settings.theme_color;
@@ -661,7 +671,6 @@
                 countdownDialog.classList.remove('active');
             });
 
-            // 【修正】カウントダウン保存処理
             saveBtn.addEventListener('click', async () => {
                 const name = countdownNameInput.value.trim();
                 const date = countdownDateInput.value;
@@ -674,33 +683,28 @@
                 const countdownData = { name, date, color };
                 
                 if (currentUser) {
-                    // ログイン中：Supabaseに保存
                     if (editingItemIndex !== null) {
-                        // 更新
                         const itemToUpdate = countdowns[editingItemIndex];
                         const { error } = await supabase.from('countdowns').update(countdownData).eq('id', itemToUpdate.id);
                         if (error) console.error("更新エラー:", error);
                     } else {
-                        // 新規作成
                         const { error } = await supabase.from('countdowns').insert({ ...countdownData, user_id: currentUser.id });
                         if (error) console.error("追加エラー:", error);
                     }
-                    await fetchCountdowns(); // DBからデータを再取得してUIを更新
+                    await fetchCountdowns();
                 } else {
-                    // 未ログイン：ローカルストレージに保存
                     if (editingItemIndex !== null) {
                         countdowns[editingItemIndex] = countdownData;
                     } else {
                         countdowns.push(countdownData);
                     }
                     localStorage.setItem('countdowns', JSON.stringify(countdowns));
-                    updateCountdownList(); // ローカルデータでUIを更新
+                    updateCountdownList();
                 }
 
                 countdownDialog.classList.remove('active');
             });
 
-            // 【修正】カウントダウンリストのクリック（編集・削除）処理
             countdownListEl.addEventListener('click', async (e) => {
                 const itemEl = e.target.closest('.countdown-item');
                 if (!itemEl) return;
@@ -713,18 +717,15 @@
                 if (deleteBtn) {
                     e.stopPropagation(); 
                     if (currentUser) {
-                        // ログイン中：Supabaseから削除
                         const { error } = await supabase.from('countdowns').delete().eq('id', item.id);
                         if(error) console.error("削除エラー:", error);
-                        await fetchCountdowns(); // 再取得してUI更新
+                        await fetchCountdowns();
                     } else {
-                        // 未ログイン：ローカルストレージから削除
                         countdowns.splice(index, 1);
                         localStorage.setItem('countdowns', JSON.stringify(countdowns));
-                        updateCountdownList(); // UI更新
+                        updateCountdownList();
                     }
                 } else {
-                    // 編集ダイアログを開く
                     dialogTitleEl.textContent = 'カウントダウンを編集';
                     countdownNameInput.value = item.name;
                     countdownDateInput.value = item.date;
@@ -767,6 +768,8 @@
                 isSignUpMode = !isSignUpMode;
                 updateAuthDialogUI();
             });
+            
+            // ★★★ 修正点3: このイベントリスナーを丸ごと入れ替え ★★★
             authForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const email = authEmailInput.value;
@@ -774,6 +777,25 @@
                 authSubmitBtn.disabled = true;
                 authSubmitBtn.textContent = '処理中...';
                 authErrorMessage.classList.add('hidden');
+
+                // 新規登録モードの場合、パスワードの長さと一致をチェック
+                if (isSignUpMode) {
+                    const passwordConfirm = authPasswordConfirmInput.value;
+                    if (password.length < 6) {
+                        authErrorMessage.textContent = 'パスワードは6文字以上で設定してください。';
+                        authErrorMessage.classList.remove('hidden');
+                        authSubmitBtn.disabled = false;
+                        authSubmitBtn.textContent = '登録する';
+                        return; // 処理を中断
+                    }
+                    if (password !== passwordConfirm) {
+                        authErrorMessage.textContent = 'パスワードが一致しません。';
+                        authErrorMessage.classList.remove('hidden');
+                        authSubmitBtn.disabled = false;
+                        authSubmitBtn.textContent = '登録する';
+                        return; // 処理を中断
+                    }
+                }
 
                 const { error } = isSignUpMode
                     ? await supabase.auth.signUp({ email, password })
@@ -783,30 +805,33 @@
                     authErrorMessage.textContent = error.message;
                     authErrorMessage.classList.remove('hidden');
                 } else {
-                    if(isSignUpMode) alert('確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。');
+                    if (isSignUpMode) {
+                        alert('確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。');
+                    }
                     authDialog.classList.remove('active');
                 }
+                
                 authSubmitBtn.disabled = false;
-                updateAuthDialogUI();
+                authSubmitBtn.textContent = isSignUpMode ? '登録する' : 'ログインする';
             });
 
-const handleOAuthSignIn = async (provider) => {
-    const { error } = await supabase.auth.signInWithOAuth({ 
-        provider: provider,
-        options: {
-            redirectTo: 'https://pipocorp-japan.github.io/pCal' // ★★★ この行を追加！ ★★★
-        }
-    });
-    if (error) {
-        authErrorMessage.textContent = `Error: ${error.message}`;
-        authErrorMessage.classList.remove('hidden');
-    }
-};            googleSignInBtn.addEventListener('click', () => handleOAuthSignIn('google'));
+            const handleOAuthSignIn = async (provider) => {
+                const { error } = await supabase.auth.signInWithOAuth({ 
+                    provider: provider,
+                    options: {
+                        redirectTo: 'https://pipocorp-japan.github.io/pCal'
+                    }
+                });
+                if (error) {
+                    authErrorMessage.textContent = `Error: ${error.message}`;
+                    authErrorMessage.classList.remove('hidden');
+                }
+            };
+            googleSignInBtn.addEventListener('click', () => handleOAuthSignIn('google'));
             githubSignInBtn.addEventListener('click', () => handleOAuthSignIn('github'));
 
 
             // --- メイン処理（認証状態の監視） ---
-            // 【修正】ログイン/ログアウト時にカウントダウンデータも更新するように変更
             supabase.auth.onAuthStateChange(async (event, session) => {
                 const user = session?.user || null;
                 currentUser = user;
@@ -814,17 +839,15 @@ const handleOAuthSignIn = async (provider) => {
                 updateAuthUI(user);
 
                 if (user) {
-                    // ログイン時、またはセッションが確立された時
                     await fetchSettings(user);
-                    await fetchCountdowns(); // DBからカウントダウンを取得
+                    await fetchCountdowns();
                     if (window.location.hash.includes('access_token')) {
                        history.replaceState(null, '', window.location.pathname)
                     }
                 } else {
-                    // ログアウト時
                     settings = { ...defaultSettings };
                     applySettings();
-                    await fetchCountdowns(); // ローカルストレージからカウントダウンを取得
+                    await fetchCountdowns();
                 }
             });
         });
