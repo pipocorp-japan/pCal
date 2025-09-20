@@ -803,6 +803,9 @@
                     // ログイン時、またはセッションが確立された時
                     await fetchSettings(user);
                     await fetchCountdowns(); // DBからカウントダウンを取得
+                    if (window.location.hash.includes('access_token')) {
+                       history.replaceState(null, '', window.location.pathname)
+                    }
                 } else {
                     // ログアウト時
                     settings = { ...defaultSettings };
