@@ -351,6 +351,22 @@
                     <label for="authPassword" class="block font-bold mb-2" style="color:var(--text-color);">パスワード</label>
                     <input type="password" id="authPassword" required class="w-full p-3 border rounded-lg" style="border-color:var(--text-color); background-color:var(--panel-inner-bg-color); color:var(--text-color);">
                 </div>
+                <!-- ... authDialog の中 ... -->
+<div class="mb-6">
+    <label for="authPassword" class="block font-bold mb-2" style="color:var(--text-color);">パスワード</label>
+    <input type="password" id="authPassword" required class="w-full p-3 border rounded-lg" style="border-color:var(--text-color); background-color:var(--panel-inner-bg-color); color:var(--text-color);">
+</div>
+
+<!-- ▼▼▼ ここから追加 ▼▼▼ -->
+<div class="mb-6" id="confirmPasswordContainer">
+    <label for="authPasswordConfirm" class="block font-bold mb-2" style="color:var(--text-color);">パスワード（確認用）</label>
+    <input type="password" id="authPasswordConfirm" required class="w-full p-3 border rounded-lg" style="border-color:var(--text-color); background-color:var(--panel-inner-bg-color); color:var(--text-color);">
+</div>
+<!-- ▲▲▲ ここまで追加 ▲▲▲ -->
+
+<div id="authErrorMessage" class="text-red-500 text-sm mb-4 hidden" style="color:#ef4444;"></div>
+<button id="authSubmitBtn" type="submit" class="w-full text-white font-bold py-3 px-4 rounded-xl shadow-md" style="background-color:var(--main-color);">ログイン</button>
+<!-- ... -->
                 <div id="authErrorMessage" class="text-red-500 text-sm mb-4 hidden" style="color:#ef4444;"></div>
                 <button id="authSubmitBtn" type="submit" class="w-full text-white font-bold py-3 px-4 rounded-xl shadow-md" style="background-color:var(--main-color);">ログイン</button>
             </form>
